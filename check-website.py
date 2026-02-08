@@ -95,8 +95,6 @@ def main() -> int:
 
     setup_logging(args.log_file)
     
-
-
     log.info("Checking URL: %s (selector: %s)", args.url, args.selector)
 
     try:
