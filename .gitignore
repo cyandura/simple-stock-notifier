@@ -1,6 +1,10 @@
 # Logs
 check-website.log
 
+
+#sample-command
+sample-command.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

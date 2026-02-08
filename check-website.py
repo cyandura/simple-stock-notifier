@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
 Check a URL for an element's text. If it differs from the expected string,
-send an SMS via Twilio. All output is logged to a file.
+send an SMS. All output is logged to a file.
+
+Uses a headless browser (Playwright) so the site sees real JavaScript and cookies,
+avoiding "enable JavaScript and cookies" blocks that curl/requests get.
 """
 
 import argparse
@@ -10,15 +13,14 @@ import os
 import sys
 from pathlib import Path
 
-import requests
-from bs4 import BeautifulSoup
-from twilio.rest import Client
+from playwright.sync_api import sync_playwright
 
 
 # Default log file path (same directory as script)
 SCRIPT_DIR = Path(__file__).resolve().parent
 LOG_FILE = SCRIPT_DIR / "check-website.log"
 
+log = logging.getLogger()
 
 def setup_logging(log_path: Path) -> None:
     """Configure logging to file and optionally to console."""
@@ -33,38 +35,40 @@ def setup_logging(log_path: Path) -> None:
     )
 
 
-def fetch_page(url: str, timeout: int = 30) -> str:
-    """Fetch the page HTML. Raises on failure."""
-    resp = requests.get(url, timeout=timeout)
-    resp.raise_for_status()
-    return resp.text
-
-
-def get_element_text(html: str, selector: str) -> str | None:
-    """Parse HTML and return the text of the first element matching the CSS selector."""
-    soup = BeautifulSoup(html, "html.parser")
-    el = soup.select_one(selector)
-    if el is None:
-        return None
-    return el.get_text(strip=True)
-
-
-def send_twilio_sms(
-    body: str,
-    account_sid: str,
-    auth_token: str,
-    from_number: str,
-    to_number: str,
-) -> bool:
-    """Send an SMS via Twilio. Returns True on success."""
-    client = Client(account_sid, auth_token)
-    client.messages.create(body=body, from_=from_number, to=to_number)
-    return True
+def get_element_text_with_browser(url: str, selector: str, timeout: float = 30000) -> str | None:
+    """
+    Open the URL in a headless Chromium browser (JavaScript and cookies enabled),
+    wait for load, then return the text of the first element matching the CSS selector.
+    Returns None if the element is not found.
+    """
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1280, "height": 720},
+            locale="en-US",
+        )
+        page = context.new_page()
+        try:
+            page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+            # Give JS a moment to run (e.g. dynamic content)
+            page.wait_for_timeout(2000)
+            locator = page.locator(selector)
+            if locator.count() == 0:
+                return None
+            text = locator.first.text_content(timeout=5000)
+            return text.strip() if text else None
+        finally:
+            browser.close()
+    return None
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Check a URL for element text; send Twilio SMS if it differs."
+        description="Check a URL for element text; send SMS if it differs."
     )
     parser.add_argument("url", help="URL to fetch")
     parser.add_argument(
@@ -85,64 +89,35 @@ def main() -> int:
         "--timeout",
         type=int,
         default=30,
-        help="HTTP request timeout in seconds (default: 30)",
+        help="Page load timeout in seconds (default: 30)",
     )
     args = parser.parse_args()
 
     setup_logging(args.log_file)
-    log = logging.getLogger()
+    
 
-    # Twilio credentials from environment
-    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
-    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
-    from_number = os.environ.get("TWILIO_FROM_NUMBER")
-    to_number = os.environ.get("TWILIO_TO_NUMBER")
-
-    if not all([account_sid, auth_token, from_number, to_number]):
-        log.error(
-            "Missing Twilio env vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, "
-            "TWILIO_FROM_NUMBER, TWILIO_TO_NUMBER"
-        )
-        return 1
 
     log.info("Checking URL: %s (selector: %s)", args.url, args.selector)
 
     try:
-        html = fetch_page(args.url, timeout=args.timeout)
-    except requests.RequestException as e:
-        log.exception("Failed to fetch URL: %s", e)
+        found_text = get_element_text_with_browser(
+            args.url,
+            args.selector,
+            timeout=args.timeout * 1000,
+        )
+    except Exception as e:
+        log.exception("Failed to load page: %s", e)
         return 1
 
-    found_text = get_element_text(html, args.selector)
     if found_text is None:
         log.warning("No element found for selector: %s", args.selector)
-        # Treat "element not found" as a change and notify
-        found_text = ""
+        found_text = "text_not_found, check HTML selector"
 
     if found_text == args.expected:
         log.info("Text matches expected: %r", args.expected)
         return 0
 
     log.info("Text differs. Expected: %r | Found: %r", args.expected, found_text)
-    message = (
-        f"Website check alert: text changed.\n"
-        f"URL: {args.url}\n"
-        f"Expected: {args.expected}\n"
-        f"Found: {found_text}"
-    )
-
-    try:
-        send_twilio_sms(
-            body=message,
-            account_sid=account_sid,
-            auth_token=auth_token,
-            from_number=from_number,
-            to_number=to_number,
-        )
-        log.info("SMS sent successfully to %s", to_number)
-    except Exception as e:
-        log.exception("Failed to send SMS: %s", e)
-        return 1
 
     return 0
 

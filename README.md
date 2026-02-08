@@ -8,11 +8,19 @@ Runs on a schedule to check a website for an element’s text and sends an SMS (
    pip install -r requirements.txt
    ```
 
-2. Set Twilio environment variables (or export them before running):
-   - `TWILIO_ACCOUNT_SID` – from Twilio Console
+2. Install a browser for Playwright (one-time). The script uses a headless browser so the site sees real JavaScript and cookies instead of a "enable JavaScript and cookies" block:
+   ```bash
+   ./venv\Scripts\activate.bat
+   py -m pip install -r requirements.txt
+   playwright install chromium
+   ```
+   On Linux you may need system libs: `playwright install-deps`
+
+3. Set Twilio environment variables (or export them before running):
+   - `TWILIO_SID` – from Twilio Console
    - `TWILIO_AUTH_TOKEN` – from Twilio Console
    - `TWILIO_FROM_NUMBER` – your Twilio phone number (e.g. `+1234567890`)
-   - `TWILIO_TO_NUMBER` – number to receive alerts (e.g. `+1987654321`)
+   - `TWILIO_TO_NUMBER_CY` – number to receive alerts (e.g. `+1987654321`)
 
 ## Usage
 
@@ -34,7 +42,7 @@ python check-website.py "https://example.com" "h1" "Welcome"
 Optional:
 
 - `--log-file PATH` – log file path (default: `check-website.log`)
-- `--timeout SECONDS` – HTTP timeout (default: 30)
+- `--timeout SECONDS` – page load timeout in seconds (default: 30)
 
 All output is written to the log file and to stdout.
 

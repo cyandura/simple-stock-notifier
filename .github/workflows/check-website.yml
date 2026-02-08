@@ -22,14 +22,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install Playwright Chromium
+        run: playwright install chromium
+
       - name: Run website check
         env:
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
           TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
-          TWILIO_TO_NUMBER: ${{ secrets.TWILIO_TO_NUMBER }}
+          TWILIO_TO_NUMBER: ${{ secrets.TWILIO_TO_NUMBER_CY }}
         run: |
           python check-website.py \
-            "${{ vars.CHECK_URL }}" \
-            "${{ vars.CHECK_SELECTOR }}" \
-            "${{ vars.CHECK_EXPECTED_TEXT }}"
+            "${{ secrets.WEBSITE_URL }}" \
+            "${{ secrets.WEBSITE_HTML_SELECTOR }}" \
+            "${{ secrets.WEBSITE_EXPECTED_TEXT }}"
