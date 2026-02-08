@@ -29,5 +29,5 @@ jobs:
         run: |
           python check-website.py \
             "${{ secrets.WEBSITE_URL }}" \
-            "${{ secrets.WEBSITE_HTML_SELECTOR }}" \
-            "${{ secrets.WEBSITE_EXPECTED_TEXT }}"
+            "${{ vars.WEBSITE_HTML_SELECTOR }}" \
+            "${{ vars.WEBSITE_EXPECTED_TEXT }}"
