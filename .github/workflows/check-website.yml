@@ -27,7 +27,7 @@ jobs:
 
       - name: Run website check
         run: |
-          python check-website.py -- \
+          python check_website.py -- \
             "${{ secrets.WEBSITE_URL }}" \
             "${{ vars.WEBSITE_HTML_SELECTOR }}" \
             "${{ vars.WEBSITE_EXPECTED_TEXT }}" \
