@@ -117,7 +117,7 @@ def main() -> int:
 
     setup_logging(args.log_file)
 
-    log.info("Checking URL: %s (selector: %s)", args.url, args.selector)
+    log.info("Checking URL with selector: %s)", args.selector)
 
     try:
         found_text = get_element_text_with_browser(
