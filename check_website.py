@@ -139,8 +139,6 @@ def main() -> int:
 
     recipients = parse_recipients(args.to_numbers)
 
-    log.info(recipients)
-
     message = f'The webpage has changed! Expected: {args.expected} | Found: {found_text}'
     for number_carrier_hostname in recipients:
         send_email.send_email(args.email_app_password, number_carrier_hostname, message)
