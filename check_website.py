@@ -9,8 +9,8 @@ avoiding "enable JavaScript and cookies" blocks that curl/requests get.
 
 import argparse
 import logging
-import os
 import sys
+import send_email
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -33,6 +33,20 @@ def setup_logging(log_path: Path) -> None:
             logging.StreamHandler(sys.stdout),
         ],
     )
+
+
+def parse_recipients(value: str) -> list[str]:
+    """
+    Parse a string of "number:gateway" pairs into a list of (number, gateway) tuples.
+    Example: "1124512662:tmomail.net,15551234567:vtext.com" -> [("1124512662", "tmomail.net"), ...]
+    """
+    if not value or not value.strip():
+        return []
+    result = []
+    for part in value.split(","):
+        part = part.strip()
+        result.append(part)
+    return result
 
 
 def get_element_text_with_browser(url: str, selector: str, timeout: float = 30000) -> str | None:
@@ -80,6 +94,14 @@ def main() -> int:
         help="Expected text (exact match). If element text differs, SMS is sent.",
     )
     parser.add_argument(
+        "email_app_password",
+        help="App Password for the email that is sending the notification.",
+    )
+    parser.add_argument(
+        "to_numbers",
+        help='Recipients as "number:gateway" pairs, comma-separated (e.g. 1124512662:tmomail.net,15551234567:vtext.com)',
+    )
+    parser.add_argument(
         "--log-file",
         type=Path,
         default=LOG_FILE,
@@ -94,7 +116,7 @@ def main() -> int:
     args = parser.parse_args()
 
     setup_logging(args.log_file)
-    
+
     log.info("Checking URL: %s (selector: %s)", args.url, args.selector)
 
     try:
@@ -115,7 +137,15 @@ def main() -> int:
         log.info("Text matches expected: %r", args.expected)
         return 0
 
-    log.info("Text differs. Expected: %r | Found: %r", args.expected, found_text)
+    recipients = parse_recipients(args.to_numbers)
+
+    log.info(recipients)
+
+    message = f'The webpage has changed! Expected: {args.expected} | Found: {found_text}'
+    for number_carrier_hostname in recipients:
+        send_email.send_email(args.email_app_password, number_carrier_hostname, message)
+
+    log.info(message)
 
     return 0
 
