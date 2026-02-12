@@ -67,10 +67,12 @@ def get_element_text_with_browser(url: str, selector: str, timeout: float = 3000
             locale="en-US",
         )
         page = context.new_page()
+        
         try:
-            page.goto(url, wait_until="domcontentloaded", timeout=timeout)
+            response = page.goto(url, wait_until="domcontentloaded", timeout=timeout)
             # Give JS a moment to run (e.g. dynamic content)
             page.wait_for_timeout(2000)
+            log.info("Response status: %s", response.status)
             locator = page.locator(selector)
             if locator.count() == 0:
                 return None
