@@ -1,10 +1,8 @@
 name: Check website scheduled run
 
 on:
-  #TODO Remove comments to start scheduler
-  # schedule:
-  #   # Run every 15mins
-  #   - cron: '*/15 * * * *'
+  schedule:
+    - cron: '*/15 * * * *' # Run every 15mins
   workflow_dispatch:
 
 jobs:

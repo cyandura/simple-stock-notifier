@@ -16,5 +16,5 @@ def send_email(app_password: str, number_carrier_hostname: str, message: str) ->
         contents=message
     )
 
-    log.info("Sent email")
+    log.info("Sent email to text number.")
 

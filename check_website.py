@@ -152,7 +152,7 @@ def main() -> int:
     for number_carrier_hostname in recipients:
         send_email.send_email(args.email_app_password, number_carrier_hostname, message)
 
-    send_telegram.send_telegram(args.telegram_bot_token, args.telegram_chat_id, message)
+    send_telegram.send_telegram(args.telegram_bot_token, args.telegram_chat_id, message, args.url)
 
     log.info(message)
 
