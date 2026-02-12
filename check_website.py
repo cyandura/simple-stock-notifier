@@ -67,16 +67,20 @@ def get_element_text_with_browser(url: str, selector: str, timeout: float = 3000
             locale="en-US",
         )
         page = context.new_page()
-        
+
         try:
             response = page.goto(url, wait_until="domcontentloaded", timeout=timeout)
             # Give JS a moment to run (e.g. dynamic content)
             page.wait_for_timeout(2000)
-            log.info("Response status: %s", response.status)
 
             if not response or not response.ok:
-                log.error("Request failed: status=%s", None if not response else response.status)
-                return 1  # or your own error handling
+                log.error(
+                    "HTTP request failed: status=%s",
+                    None if not response else response.status,
+                )
+                return None
+
+            log.info("HTTP status OK: %s", response.status)
 
             locator = page.locator(selector)
             if locator.count() == 0:
@@ -145,9 +149,10 @@ def main() -> int:
         log.exception("Failed to load page: %s", e)
         return 1
 
+    # Stop immediately on HTTP failure or missing element
     if found_text is None:
-        log.warning("No element found for selector: %s", args.selector)
-        found_text = "text_not_found, check HTML selector"
+        log.error("Stopping script: request failed or no element for selector: %s", args.selector)
+        return 1
 
     if found_text == args.expected:
         log.info("Text matches expected: %r", args.expected)
