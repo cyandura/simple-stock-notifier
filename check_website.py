@@ -11,6 +11,7 @@ import argparse
 import logging
 import sys
 import send_email
+import send_telegram
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -102,6 +103,14 @@ def main() -> int:
         help='Recipients as "number:gateway" pairs, comma-separated (e.g. 1124512662:tmomail.net,15551234567:vtext.com)',
     )
     parser.add_argument(
+        "telegram_bot_token",
+        help='Telegram bot token',
+    )
+    parser.add_argument(
+        "telegram_chat_id",
+        help='Telegram chat ID',
+    )
+    parser.add_argument(
         "--log-file",
         type=Path,
         default=LOG_FILE,
@@ -142,6 +151,8 @@ def main() -> int:
     message = f'The webpage has changed! Expected: {args.expected} | Found: {found_text}'
     for number_carrier_hostname in recipients:
         send_email.send_email(args.email_app_password, number_carrier_hostname, message)
+
+    send_telegram.send_telegram(args.telegram_bot_token, args.telegram_chat_id, message)
 
     log.info(message)
 
