@@ -16,28 +16,29 @@ Runs on a schedule to check a website for an element’s text and sends an SMS (
    ```
    On Linux you may need system libs: `playwright install-deps`
 
-3. Set Twilio environment variables (or export them before running):
-   - `TWILIO_SID` – from Twilio Console
-   - `TWILIO_AUTH_TOKEN` – from Twilio Console
-   - `TWILIO_FROM_NUMBER` – your Twilio phone number (e.g. `+1234567890`)
-   - `TWILIO_TO_NUMBER_CY` – number to receive alerts (e.g. `+1987654321`)
+3. Set environment variables or secrets that are required for running. This is the python command that is ran
+   ```bash
+   python check_website.py -- \
+            "${{ secrets.WEBSITE_URL }}" \
+            "${{ vars.WEBSITE_HTML_SELECTOR }}" \
+            "${{ vars.WEBSITE_EXPECTED_TEXT }}" \
+            "${{ secrets.GMAIL_APP_PASSWORD }}" \
+            "${{ secrets.SMS_RECIPIENTS_AND_CARRIERS }}" \
+            "${{ secrets.TELEGRAM_BOT_TOKEN }}" \
+            "${{ secrets.TELEGRAM_CHAT_ID }}"
+   ```
 
-## Usage
+   Uses Github actions secrets and variables. 
+   
+   In your repo: **Settings → Secrets and variables → Actions**.
 
-```bash
-python check-website.py <URL> <CSS_SELECTOR> <EXPECTED_TEXT>
-```
-
-- **URL** – page to fetch
-- **CSS_SELECTOR** – element to read (e.g. `#price`, `.status`, `h1`)
-- **EXPECTED_TEXT** – exact string to compare; if the element’s text differs, an SMS is sent
-
-Examples:
-
-```bash
-python check-website.py "https://example.com/product" "#stock-status" "Out of stock"
-python check-website.py "https://example.com" "h1" "Welcome"
-```
+- **WEBSITE_URL** – page to fetch
+- **WEBSITE_HTML_SELECTOR** – element to read (e.g. `#price`, `.status`, `h1`)
+- **WEBSITE_EXPECTED_TEXT** – exact string to compare; if the element’s text differs, an SMS is sent
+- **GMAIL_APP_PASSWORD** – App password for the gmail account that will send the emails. Code has a hardcoded email address
+- **SMS_RECIPIENTS_AND_CARRIERS** – numbers and carriers email extensions for sending the requests. i the format `1234567890@carrier.com` or .net. The carrier emails used for sending texts differ per carrier.
+- **TELEGRAM_BOT_TOKEN** – The telegram bot token for send messages to a telegram bot. Required
+- **TELEGRAM_CHAT_ID** – The chat id of the channel to send to. Required
 
 Optional:
 
@@ -46,21 +47,7 @@ Optional:
 
 All output is written to the log file and to stdout.
 
-## GitHub Actions (hourly check)
+## GitHub Actions (cron schedule)
 
-A workflow runs every hour and calls the script using values from the repo.
+Workflow runs on a cron schedule and calls the script using values from the repo
 
-1. In your repo: **Settings → Secrets and variables → Actions**.
-
-2. **Secrets** (required for Twilio):
-   - `TWILIO_ACCOUNT_SID`
-   - `TWILIO_AUTH_TOKEN`
-   - `TWILIO_FROM_NUMBER`
-   - `TWILIO_TO_NUMBER`
-
-3. **Variables** (required for the check):
-   - `CHECK_URL` – URL to fetch (e.g. `https://example.com/product`)
-   - `CHECK_SELECTOR` – CSS selector (e.g. `#stock-status`)
-   - `CHECK_EXPECTED_TEXT` – expected text (e.g. `Out of stock`)
-
-4. The workflow **Check website** runs on the schedule and can also be triggered manually from the **Actions** tab.
