@@ -1,8 +1,8 @@
 name: Check website scheduled run
 
 on:
-  schedule:
-    - cron: '*/15 * * * *' # Run every 15mins
+  # schedule:
+  #   - cron: '*/15 * * * *' # Run every 15mins
   workflow_dispatch:
 
 jobs:
